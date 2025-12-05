@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getLoginUserUsingGet } from '@/api/userController'
 // 登录用户状态管理
-export const useUserLoginUserStore = defineStore('loginUser', () => {
+export const useLoginUserStore = defineStore('loginUser', () => {
   //初始化登录用户
   const loginUser = ref<any>({
     userName: '未登录',

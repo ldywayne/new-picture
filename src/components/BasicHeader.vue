@@ -58,14 +58,14 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { h, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import { HomeOutlined, AppstoreOutlined, UserOutlined, PlusOutlined, InboxOutlined, LogoutOutlined, ProfileOutlined } from '@ant-design/icons-vue';
 import type { MenuProps } from 'ant-design-vue';
 import { useRouter } from 'vue-router'
-import { useUserLoginUserStore } from '@/stores/userLoginUserStore'
+import { useLoginUserStore } from '@/stores/userLoginUserStore'
 import { userLogoutUsingPost } from '@/api/userController'
 import { message } from 'ant-design-vue'
-const loginUserStore = useUserLoginUserStore();
+const loginUserStore = useLoginUserStore();
 
 // 原始菜单项
 const originItems = [
@@ -103,7 +103,29 @@ const originItems = [
 // 菜单项
 const items = ref<MenuProps['items']>(originItems);
 const router = useRouter()
-// 点击菜单
+//过滤菜单项
+const filterMenus = (menus = [] as MenuProps['items']) => {
+  return menus?.filter((item) => {
+    // 过滤掉无key的菜单项
+    if (!item?.key) {
+      return false;
+    }
+    if (typeof item?.key === 'string' && item?.key.startsWith('/admin')) {
+      // 管理员菜单项，只有管理员可见
+      const loginUser = loginUserStore.loginUser;
+      // 如果用户不是管理员，过滤掉该菜单项
+      if (!loginUser || loginUser.userRole !== 'admin') {
+        return false;
+      }
+    }
+    // 其他菜单项，所有用户可见
+    return true;
+  })
+}
+// const items = computed(() => {
+//   return filterMenus(originItems)
+// })
+// 点击菜单项
 const doMenuClick = ({ key }: { key: string }) => {
   // current.value = [key];
   console.log(key);
@@ -142,7 +164,8 @@ const handleLogout = async () => {
 const handleLoginClick = () => {
   router.push({
     path: '/user/login',
-    replace: true,// 登录成功后，替换当前路由，避免用户点击返回按钮后，返回登录页
+    query: { redirect: window.location.href },
+    replace: true,
   })
 }
 </script>

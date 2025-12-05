@@ -28,14 +28,18 @@
 id
 <script lang="ts" setup>
 import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserLoginUserStore } from '@/stores/userLoginUserStore'
+import { useRouter, useRoute } from 'vue-router'
+import { useLoginUserStore } from '@/stores/userLoginUserStore'
 import { userLoginUsingPost } from '@/api/userController'
 import { message } from 'ant-design-vue'
 
+// 路由工具：
+// - router 用于导航跳转
+// - route 读取当前地址上的 query 参数（例如登录页上的 redirect）
 const router = useRouter()
+const route = useRoute()
 // 登录用户状态管理
-const userLoginUserStore = useUserLoginUserStore()
+const userLoginUserStore = useLoginUserStore()
 
 interface FormState {
   userAccount: string
@@ -47,6 +51,7 @@ const formState = reactive<FormState>({
   userAccount: '',
   userPassword: '',
 })
+// 提交登录表单：成功后根据 redirect 参数进行安全重定向
 const handleSubmit = async (values: any) => {
   try {
     const res = await userLoginUsingPost(values)
@@ -54,10 +59,44 @@ const handleSubmit = async (values: any) => {
       // 登录成功后，刷新登录用户信息
       await userLoginUserStore.fetchLoginUser()
       message.success('登录成功')
-      router.push({
-        path: '/',
-        replace: true,// 登录成功后，替换当前路由，避免用户点击返回按钮后，返回登录页
-      })
+      // 从登录页 URL 上读取来源地址，例如 /user/login?redirect=/admin/userManage
+      const redirectParam = route.query.redirect as string | undefined
+      // 当前登录用户角色，用于限制非管理员跳转到 /admin
+      const role = userLoginUserStore.loginUser?.userRole
+      if (redirectParam) {
+        try {
+          // 情况1：站内相对路径，例如 "/", "/about", "/admin/userManage"
+          if (redirectParam.startsWith('/')) {
+            if (redirectParam.startsWith('/admin') && role !== 'admin') {
+              // 非管理员不允许回跳到后台，降级到首页
+              router.replace('/')
+            } else {
+              // 使用 replace，避免返回历史栈时又回到登录页
+              router.replace(redirectParam)
+            }
+          } else {
+            // 情况2：完整 URL（可能来自拦截器注入），需校验同源以防跳转到外站
+            const url = new URL(redirectParam)
+            if (url.origin === window.location.origin) {
+              if (url.pathname.startsWith('/admin') && role !== 'admin') {
+                router.replace('/')
+              } else {
+                // 同源完整 URL，直接以 location 刷新到目标地址
+                window.location.href = redirectParam
+              }
+            } else {
+              // 非同源地址，安全起见不跳转，回到首页
+              router.replace('/')
+            }
+          }
+        } catch {
+          // 参数异常（无法解析为 URL 等），统一回到首页
+          router.replace('/')
+        }
+      } else {
+        // 无 redirect 参数，默认回到首页
+        router.replace('/')
+      }
     } else {
       message.error('登录失败' + (res.data.message || ''))
     }

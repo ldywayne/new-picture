@@ -39,14 +39,14 @@ id
 <script lang="ts" setup>
 import { reactive, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserLoginUserStore } from '@/stores/userLoginUserStore'
+import { useLoginUserStore } from '@/stores/userLoginUserStore'
 import { userRegisterUsingPost } from '@/api/userController'
 import { message } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/es/form'
 
 const router = useRouter()
 // 登录用户状态管理
-const userLoginUserStore = useUserLoginUserStore()
+const userLoginUserStore = useLoginUserStore()
 
 interface FormState {
   userAccount: string
