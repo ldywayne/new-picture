@@ -24,6 +24,16 @@ const router = createRouter({
       name: '用户管理',
       component: () => import('@/pages/admin/UserMangePage.vue'),
     },
+    {
+      path: '/user/info',
+      name: '用户信息编辑',
+      component: () => import('@/pages/user/UserInfo.vue'),
+    },
+    {
+      path: '/add-picture',
+      name: '添加图片',
+      component: () => import('@/pages/AddPicturePage.vue'),
+    },
   ],
 })
 

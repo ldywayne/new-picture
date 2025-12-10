@@ -1,18 +1,19 @@
 <template>
   <div id="userLoginPage">
     <h2 class="title">用户登录</h2>
-    <div class="desc">
-      企业级智能协同云图库
-    </div>
+    <div class="desc">企业级智能协同云图库</div>
     <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
       <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号!' }]">
         <a-input v-model:value="formState.userAccount" placeholder="请输入账号" />
       </a-form-item>
 
-      <a-form-item name="userPassword" :rules="[
-        { required: true, message: '请输入密码!' },
-        { min: 8, message: '密码长度不能小于8位!' },
-      ]">
+      <a-form-item
+        name="userPassword"
+        :rules="[
+          { required: true, message: '请输入密码!' },
+          { min: 8, message: '密码长度不能小于8位!' },
+        ]"
+      >
         <a-input-password v-model:value="formState.userPassword" placeholder="请输入密码" />
       </a-form-item>
       <div class="tips">
@@ -44,7 +45,6 @@ const userLoginUserStore = useLoginUserStore()
 interface FormState {
   userAccount: string
   userPassword: string
-
 }
 
 const formState = reactive<FormState>({
@@ -104,9 +104,7 @@ const handleSubmit = async (values: any) => {
     message.error('登录失败' + (e.message || ''))
   }
   // 登录
-
 }
-
 </script>
 <style scoped>
 #userLoginPage {
