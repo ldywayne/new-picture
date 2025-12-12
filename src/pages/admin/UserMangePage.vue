@@ -162,6 +162,8 @@ const searchParams = reactive({
   pageSize: 10,
   userAccount: '',
   userName: '',
+  sortField: 'createTime',
+  sortOrder: 'descend',
 })
 // 获取数据列表
 const fetchDataList = async () => {

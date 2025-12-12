@@ -1,6 +1,7 @@
 <template>
   <div id="addPicturePage">
-    <h2>创建图片</h2>
+    <h2 v-if="!route.query?.id">创建图片</h2>
+    <h2 v-else>编辑图片</h2>
     <PictureUpload :picture="picture" :onSuccess="handleSuccess" />
     <a-form
       v-if="picture"
@@ -37,8 +38,12 @@
       </a-form-item>
       <a-form-item>
         <div class="buttons">
-          <a-button style="width: 100%" type="primary" html-type="submit">创建</a-button>
-          <a-button style="width: 100%; margin-top: 16px" @click="doReset">重置</a-button>
+          <a-button style="width: 100%" type="primary" html-type="submit">{{
+            route.query?.id ? '编辑' : '创建'
+          }}</a-button>
+          <a-button v-if="!route.query?.id" style="width: 100%; margin-top: 16px" @click="doReset"
+            >重置</a-button
+          >
         </div>
       </a-form-item>
     </a-form>
@@ -49,10 +54,15 @@
 import PictureUpload from '@/components/PictureUpload.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { editPictureUsingPost, listPictureTagCategoryUsingGet } from '@/api/pictureController'
-import { useRouter } from 'vue-router'
+import {
+  editPictureUsingPost,
+  listPictureTagCategoryUsingGet,
+  getPictureVoByIdUsingGet,
+} from '@/api/pictureController'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+
 // 定义图片对象
 const picture = ref<any>(null)
 // 定义上传成功后的回调函数
@@ -65,7 +75,7 @@ const pictureForm = reactive({
   name: '',
   introduction: '',
   category: '',
-  tags: [],
+  tags: [] as string[],
 })
 const doSearch = async (values: any) => {
   const pictureId = picture.value?.id
@@ -78,7 +88,11 @@ const doSearch = async (values: any) => {
     ...values,
   })
   if (res.data.code === 0 && res.data.data) {
-    message.success('图片信息创建成功')
+    if (route.query?.id) {
+      message.success('图片信息编辑成功')
+    } else {
+      message.success('图片信息创建成功')
+    }
     //创建成功后跳转图片详情页
     router.push({
       path: `/picture-detail/${pictureId}`,
@@ -115,6 +129,27 @@ const getTagCategoryOptions = async () => {
 // 页面加载时获取分类和标签选项
 onMounted(() => {
   getTagCategoryOptions()
+})
+//获取老数据
+const route = useRoute()
+const getOldPicture = async () => {
+  //获取图片id
+  const id = route.query?.id
+  if (id) {
+    const res = await getPictureVoByIdUsingGet({ id })
+    if (res.data.code === 0 && res.data.data) {
+      const data = res.data.data
+      picture.value = data
+      pictureForm.name = data.name ?? ''
+      pictureForm.introduction = data.introduction ?? ''
+      pictureForm.category = data.category ?? ''
+      pictureForm.tags = data.tags ?? []
+    }
+  }
+}
+// 页面加载时获取老数据
+onMounted(() => {
+  getOldPicture()
 })
 </script>
 

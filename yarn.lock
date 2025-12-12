@@ -511,6 +511,11 @@
   "resolved" "https://registry.npmmirror.com/@types/estree/-/estree-1.0.8.tgz"
   "version" "1.0.8"
 
+"@types/file-saver@^2.0.7":
+  "integrity" "sha512-dNKVfHd/jk0SkR/exKGj2ggkB45MAkzvWCaqLUUgkyjITkGNzH8H+yUwr+BLJUBjZOe9w8X3wgmXhZDRg1ED6A=="
+  "resolved" "https://registry.npmmirror.com/@types/file-saver/-/file-saver-2.0.7.tgz"
+  "version" "2.0.7"
+
 "@types/json-schema@^7.0.15":
   "integrity" "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="
   "resolved" "https://registry.npmmirror.com/@types/json-schema/-/json-schema-7.0.15.tgz"
@@ -1629,6 +1634,11 @@
   "version" "8.0.0"
   dependencies:
     "flat-cache" "^4.0.0"
+
+"file-saver@^2.0.5":
+  "integrity" "sha512-P9bmyZ3h/PRG+Nzga+rbdI4OEpNDzAVyy74uVO9ATgzLK6VtAsYybF/+TOCvrc0MO793d6+42lLyZTw7/ArVzA=="
+  "resolved" "https://registry.npmmirror.com/file-saver/-/file-saver-2.0.5.tgz"
+  "version" "2.0.5"
 
 "fill-range@^7.1.1":
   "integrity" "sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg=="

@@ -25,6 +25,11 @@ const router = createRouter({
       component: () => import('@/pages/admin/UserMangePage.vue'),
     },
     {
+      path: '/admin/pictureManage',
+      name: '图片管理',
+      component: () => import('@/pages/admin/PictureManagePage.vue'),
+    },
+    {
       path: '/user/info',
       name: '用户信息编辑',
       component: () => import('@/pages/user/UserInfo.vue'),
@@ -33,6 +38,12 @@ const router = createRouter({
       path: '/add-picture',
       name: '添加图片',
       component: () => import('@/pages/AddPicturePage.vue'),
+    },
+    {
+      path: '/picture/:id',
+      name: '图片详情',
+      component: () => import('@/pages/PictureDetailPage.vue'),
+      props: true,
     },
   ],
 })
