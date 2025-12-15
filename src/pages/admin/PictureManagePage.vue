@@ -1,6 +1,19 @@
 <template>
   <div id="PictureMangePage">
-    <a-form layout="inline" :model="searchParams" @finish="doSearch" style="margin-bottom: 16px">
+    <a-flex justify="space-between">
+      <h2>图片管理</h2>
+      <a-space>
+        <a-button type="primary" @click="handleAddClick">创建图片</a-button>
+        <a-button type="primary" @click="handleBatchAddClick">批量创建图片</a-button>
+      </a-space>
+    </a-flex>
+
+    <a-form
+      layout="inline"
+      :model="searchParams"
+      @finish="doSearch"
+      style="margin-bottom: 16px; margin-top: 16px"
+    >
       <a-form-item label="关键词" name="searchText">
         <a-input v-model:value="searchParams.searchText" placeholder="输入关键词" />
       </a-form-item>
@@ -16,6 +29,16 @@
           allow-clear
         />
       </a-form-item>
+      <a-form-item label="审核状态" name="reviewStatus">
+        <a-select
+          v-model:value="searchParams.reviewStatus"
+          :options="PIC_REVIEW_STATUS_OPTIONS"
+          placeholder="请输入审核状态"
+          style="min-width: 180px"
+          allow-clear
+        />
+      </a-form-item>
+
       <a-form-item>
         <a-space>
           <a-button type="primary" html-type="submit">搜索</a-button>
@@ -58,15 +81,45 @@
           <div>图片宽高比：{{ record.picScale }}</div>
           <div>图片大小：{{ (record.picSize / 1024).toFixed(2) }}KB</div>
         </template>
-        <template v-else-if="column.key === 'action'">
-          <a-button
-            type="link"
-            :href="`/add-picture/?id=${record.id}`"
-            target="_blank"
-            style="margin-right: 16px"
-            >编辑</a-button
+        <template v-else-if="column.dataIndex === 'reviewStatus'">
+          <div>
+            审核状态：<a-tag
+              :color="record.reviewStatus === PIC_REVIEW_STATUS_ENUM.PASS ? 'green' : 'red'"
+              >{{ PIC_REVIEW_STATUS_MAP[record.reviewStatus] || '未知状态' }}</a-tag
+            >
+          </div>
+          <div>审核信息：{{ record.reviewMessage || '无' }}</div>
+          <div
+            v-if="
+              record.reviewStatus === PIC_REVIEW_STATUS_ENUM.PASS ||
+              record.reviewStatus === PIC_REVIEW_STATUS_ENUM.REJECT
+            "
           >
-          <a-button danger @click="doDelete(record.id)">删除</a-button>
+            审核人：{{ userMap.find((user: any) => user.id === record.reviewerId)?.userName || '' }}
+          </div>
+        </template>
+        <template v-else-if="column.key === 'action'">
+          <a-space wrap>
+            <a-button
+              type="link"
+              v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.PASS"
+              @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.PASS)"
+            >
+              通过
+            </a-button>
+            <a-button
+              type="link"
+              v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.REJECT"
+              danger
+              @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.REJECT)"
+            >
+              拒绝
+            </a-button>
+            <a-button type="link" :href="`/add_picture?id=${record.id}`" target="_blank"
+              >编辑
+            </a-button>
+            <a-button type="link" danger @click="doDelete(record.id)">删除</a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -79,23 +132,17 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import {
   listPictureByPageUsingPost,
   deletePictureUsingPost,
-  updatePictureUsingPost,
+  doPictureReviewUsingPost,
 } from '@/api/pictureController'
+import { listUserVoByPageUsingPost } from '@/api/userController'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { useRouter } from 'vue-router'
-import { useLoginUserStore } from '@/stores/userLoginUserStore'
-const loginUserStore = useLoginUserStore()
+import {
+  PIC_REVIEW_STATUS_ENUM,
+  PIC_REVIEW_STATUS_MAP,
+  PIC_REVIEW_STATUS_OPTIONS,
+} from '@/constants/picture'
 
-// 编辑图片弹窗可见性
-const visible = ref(false)
-// 编辑图片表单数据
-const editPictureForm = reactive({
-  pictureName: '',
-  pictureRole: '',
-  id: '',
-  // picturePassword: '',
-})
 const columns = [
   {
     title: 'id',
@@ -147,6 +194,12 @@ const columns = [
     align: 'center',
   },
   {
+    title: '审核信息',
+    dataIndex: 'reviewStatus',
+    width: 160,
+    align: 'center',
+  },
+  {
     title: '创建时间',
     dataIndex: 'createTime',
     width: 180,
@@ -177,10 +230,13 @@ const searchParams = reactive({
   sortField: 'createTime',
   sortOrder: 'descend',
   searchText: '',
+  reviewStatus: null,
   category: '',
   tags: [],
   //pictureName: '',
 })
+//
+const userId = ref<any>([])
 // 获取数据列表
 const fetchDataList = async () => {
   console.log('999999999', searchParams)
@@ -194,14 +250,45 @@ const fetchDataList = async () => {
   })
   if (res.data.code === 0 && res.data.data) {
     console.log('5555555', res.data.data.records)
-
+    res.data.data.records?.forEach((item: any) => {
+      userId.value.push(item.userId)
+    })
+    console.log('000000', [...userId.value])
     dataList.value = res.data.data.records ?? []
     total.value = Number(res.data.data.total) || 0
   } else {
     message.error('获取数据失败' + (res.data.message || ''))
   }
 }
-
+//用户信息映射
+const userMap = ref<any>([])
+const fetchUserMap = async () => {
+  // 1. 把 userId 数组映射成「Promise 数组」
+  const ps = userId.value.map((id: any) => fetchUserInfo(id))
+  // 2. 一起等待
+  const users = await Promise.all(ps)
+  // 3. 一次性塞进响应式数组
+  userMap.value = users.filter(Boolean) // 过滤掉可能的 undefined
+  console.log('userMap', userMap.value)
+}
+//根据id获取用户信息
+const fetchUserInfo = async (id: any) => {
+  const res = await listUserVoByPageUsingPost({ id })
+  if (res.data.code === 0 && res.data.data) {
+    // console.log('5555555', res.data.data.records)
+    const user = res.data.data.records?.[0] || {}
+    console.log('444444', {
+      id: user.id,
+      userName: user.userName || '未知用户',
+    })
+    return {
+      id: user.id,
+      userName: user.userName || '未知用户',
+    }
+  } else {
+    message.error('获取数据失败' + (res.data.message || ''))
+  }
+}
 // 删除图片
 // 删除数据
 const doDelete = async (id: any) => {
@@ -218,18 +305,7 @@ const doDelete = async (id: any) => {
   }
 }
 // 编辑图片
-const doEdit = (record: any) => {
-  // message.info('编辑图片，ID：' + record.id)
-  // 填充表单数据
-  editPictureForm.pictureName = record.pictureName
-  editPictureForm.pictureRole = record.pictureRole
-  // 填充表单数据
-  editPictureForm.id = record.id
 
-  // editPictureForm.picturePassword = record.picturePassword
-  // 显示弹窗
-  visible.value = true
-}
 // 分页参数
 const pagination = computed(() => {
   return {
@@ -259,9 +335,27 @@ const doReset = () => {
   doSearch()
 }
 
+const handleReview = async (record: API.Picture, reviewStatus: number) => {
+  const reviewMessage =
+    reviewStatus === PIC_REVIEW_STATUS_ENUM.PASS ? '管理员操作通过' : '管理员操作拒绝'
+  const res = await doPictureReviewUsingPost({
+    id: record.id,
+    reviewStatus,
+    reviewMessage,
+  })
+  if (res.data.code === 0) {
+    message.success('审核操作成功')
+    // 重新获取列表
+    fetchDataList()
+  } else {
+    message.error('审核操作失败，' + res.data.message)
+  }
+}
+
 // 组件挂载时，获取数据列表
-onMounted(() => {
-  fetchDataList()
+onMounted(async () => {
+  await fetchDataList()
+  await fetchUserMap()
 })
 </script>
 
