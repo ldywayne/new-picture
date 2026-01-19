@@ -97,6 +97,7 @@ const handleSubmit = async (values: any) => {
         // 无 redirect 参数，默认回到首页
         router.replace('/')
       }
+      router.replace(finalPath)
     } else {
       message.error('登录失败' + (res.data.message || ''))
     }

@@ -3,8 +3,10 @@
     <a-flex justify="space-between">
       <h2>图片管理</h2>
       <a-space>
-        <a-button type="primary" @click="handleAddClick">创建图片</a-button>
-        <a-button type="primary" @click="handleBatchAddClick">批量创建图片</a-button>
+        <a-button type="primary" href="/add-picture" target="_blank">+ 创建图片</a-button>
+        <a-button type="primary" href="/add_picture/batch" target="_blank" ghost
+          >+ 批量创建图片</a-button
+        >
       </a-space>
     </a-flex>
 
@@ -352,6 +354,12 @@ const handleReview = async (record: API.Picture, reviewStatus: number) => {
   }
 }
 
+const handleAddClick = () => {
+  console.log('添加图片')
+}
+const handleBatchAddClick = () => {
+  console.log('批量添加图片')
+}
 // 组件挂载时，获取数据列表
 onMounted(async () => {
   await fetchDataList()
