@@ -41,7 +41,7 @@
     <!-- 编辑用户弹窗 -->
     <a-modal
       title="编辑用户"
-      :open.sync="visible"
+      v-model:open="visible"
       :footer="null"
       width="400px"
       :closable="true"
@@ -74,7 +74,7 @@
 </template>
 
 <script lang="ts" setup>
-import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue'
+// import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue'
 import { reactive, ref, onMounted, computed } from 'vue'
 import {
   listUserVoByPageUsingPost,
@@ -83,17 +83,17 @@ import {
 } from '@/api/userController'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/userLoginUserStore'
 const loginUserStore = useLoginUserStore()
 
 // 编辑用户弹窗可见性
 const visible = ref(false)
 // 编辑用户表单数据
-const editUserForm = reactive({
+const editUserForm = reactive<API.LoginUserVO>({
   userName: '',
   userRole: '',
-  id: '',
+  id: undefined,
   // userPassword: '',
 })
 const columns = [
@@ -132,7 +132,7 @@ const columns = [
     dataIndex: 'createTime',
     width: 120,
     align: 'center',
-    customRender: ({ record }: { record: any }) => {
+    customRender: ({ record }: { record: API.LoginUserVO }) => {
       return dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss')
     },
   },
@@ -141,7 +141,7 @@ const columns = [
     dataIndex: 'updateTime',
     width: 120,
     align: 'center',
-    customRender: ({ record }: { record: any }) => {
+    customRender: ({ record }: { record: API.LoginUserVO }) => {
       return dayjs(record.updateTime).format('YYYY-MM-DD HH:mm:ss')
     },
   },
@@ -154,7 +154,7 @@ const columns = [
   },
 ]
 // 定义数据列表和总数
-const dataList = ref<any>([])
+const dataList = ref<API.LoginUserVO[]>([])
 const total = ref(0)
 //搜索参数
 const searchParams = reactive({
@@ -189,7 +189,7 @@ const fetchDataList = async () => {
 
 // 删除用户
 // 删除数据
-const doDelete = async (id: string) => {
+const doDelete = async (id: number) => {
   if (!id) {
     return
   }
@@ -203,7 +203,7 @@ const doDelete = async (id: string) => {
   }
 }
 // 编辑用户
-const doEdit = (record: any) => {
+const doEdit = (record: API.LoginUserVO) => {
   // message.info('编辑用户，ID：' + record.id)
   // 填充表单数据
   editUserForm.userName = record.userName
@@ -227,7 +227,7 @@ const pagination = computed(() => {
   }
 })
 //切换页码或页大小
-const onTableChange = (pag: any) => {
+const onTableChange = (pag: API.PictureQueryRequest) => {
   searchParams.current = pag?.current ?? 1
   searchParams.pageSize = pag?.pageSize ?? searchParams.pageSize
   fetchDataList()

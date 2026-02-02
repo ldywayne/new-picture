@@ -6,7 +6,7 @@ export const PIC_REVIEW_STATUS_ENUM = {
   REJECT: 2,
 }
 // 图片审核状态映射
-export const PIC_REVIEW_STATUS_MAP = {
+export const PIC_REVIEW_STATUS_MAP: Record<string, string> = {
   0: '待审核',
   1: '通过',
   2: '拒绝',

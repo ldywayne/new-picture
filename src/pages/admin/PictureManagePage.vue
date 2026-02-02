@@ -129,7 +129,7 @@
 </template>
 
 <script lang="ts" setup>
-import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue'
+// import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue'
 import { reactive, ref, onMounted, computed } from 'vue'
 import {
   listPictureByPageUsingPost,
@@ -223,22 +223,22 @@ const columns = [
 ]
 
 // 定义数据列表和总数
-const dataList = ref<any>([])
+const dataList = ref<API.Picture[]>([])
 const total = ref(0)
 //搜索参数
-const searchParams = reactive({
+const searchParams = reactive<API.PictureQueryRequest>({
   current: 1,
   pageSize: 10,
   sortField: 'createTime',
   sortOrder: 'descend',
   searchText: '',
-  reviewStatus: null,
+  reviewStatus: undefined,
   category: '',
   tags: [],
   //pictureName: '',
 })
 //
-const userId = ref<any>([])
+const userId = ref<string[]>([])
 // 获取数据列表
 const fetchDataList = async () => {
   console.log('999999999', searchParams)
@@ -252,8 +252,8 @@ const fetchDataList = async () => {
   })
   if (res.data.code === 0 && res.data.data) {
     console.log('5555555', res.data.data.records)
-    res.data.data.records?.forEach((item: any) => {
-      userId.value.push(item.userId)
+    res.data.data.records?.forEach((item) => {
+      userId.value.push(item.userId?.toString() || '')
     })
     console.log('000000', [...userId.value])
     dataList.value = res.data.data.records ?? []
@@ -263,10 +263,10 @@ const fetchDataList = async () => {
   }
 }
 //用户信息映射
-const userMap = ref<any>([])
+const userMap = ref()
 const fetchUserMap = async () => {
   // 1. 把 userId 数组映射成「Promise 数组」
-  const ps = userId.value.map((id: any) => fetchUserInfo(id))
+  const ps = userId.value.map((id: string) => fetchUserInfo(Number(id)))
   // 2. 一起等待
   const users = await Promise.all(ps)
   // 3. 一次性塞进响应式数组
@@ -274,7 +274,7 @@ const fetchUserMap = async () => {
   console.log('userMap', userMap.value)
 }
 //根据id获取用户信息
-const fetchUserInfo = async (id: any) => {
+const fetchUserInfo = async (id: number) => {
   const res = await listUserVoByPageUsingPost({ id })
   if (res.data.code === 0 && res.data.data) {
     // console.log('5555555', res.data.data.records)
@@ -293,7 +293,7 @@ const fetchUserInfo = async (id: any) => {
 }
 // 删除图片
 // 删除数据
-const doDelete = async (id: any) => {
+const doDelete = async (id: number) => {
   if (!id) {
     return
   }
@@ -320,7 +320,7 @@ const pagination = computed(() => {
   }
 })
 //切换页码或页大小
-const onTableChange = (pag: any) => {
+const onTableChange = (pag: API.PictureQueryRequest) => {
   searchParams.current = pag?.current ?? 1
   searchParams.pageSize = pag?.pageSize ?? searchParams.pageSize
   fetchDataList()
@@ -354,12 +354,12 @@ const handleReview = async (record: API.Picture, reviewStatus: number) => {
   }
 }
 
-const handleAddClick = () => {
-  console.log('添加图片')
-}
-const handleBatchAddClick = () => {
-  console.log('批量添加图片')
-}
+// const handleAddClick = () => {
+//   console.log('添加图片')
+// }
+// const handleBatchAddClick = () => {
+//   console.log('批量添加图片')
+// }
 // 组件挂载时，获取数据列表
 onMounted(async () => {
   await fetchDataList()

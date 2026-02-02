@@ -151,7 +151,7 @@ const doMenuClick = ({ key }: { key: string }) => {
 const current = ref<string[]>([])
 
 // 路由变化后，更新当前选中项
-router.afterEach((to, from) => {
+router.afterEach((to) => {
   current.value = [to.path]
 })
 //退回登录页
@@ -175,7 +175,7 @@ const handleLogout = async () => {
 }
 //监听路由变化
 const route = router.currentRoute
-const isLoginPage = ref(true)
+// const isLoginPage = ref(true)
 // 登录点击事件
 const handleLoginClick = () => {
   console.log('当前路由路径:', route.value.path)

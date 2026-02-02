@@ -51,58 +51,79 @@ const formState = reactive<FormState>({
   userAccount: '',
   userPassword: '',
 })
+
+/**
+ * 默认跳转首页
+ */
+const DEFAULT_REDIRECT_PATH = '/'
+
+/**
+ * 规范化 redirect 参数
+ * @param redirect 可能是 string | string[] | undefined
+ */
+const normalizeRedirectParam = (redirect: unknown): string | undefined => {
+  const value = Array.isArray(redirect) ? redirect[0] : redirect
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+/**
+ * 获取安全的重定向地址
+ * 防止开放重定向漏洞，只允许站内跳转
+ */
+const getSafeRedirectPath = (redirect: unknown): string => {
+  const normalized = normalizeRedirectParam(redirect)
+  if (!normalized) return DEFAULT_REDIRECT_PATH
+
+  // 情况1：以 / 开头的站内路径
+  if (normalized.startsWith('/')) {
+    return normalized
+  }
+
+  // 情况2：完整 URL，需校验是否同源
+  try {
+    const url = new URL(normalized)
+    if (url.origin !== window.location.origin) {
+      return DEFAULT_REDIRECT_PATH
+    }
+    // 同源地址只取 pathname + search + hash
+    const path = url.pathname || '/'
+    return `${path}${url.search}${url.hash}`
+  } catch {
+    // 解析异常，回退到首页
+    return DEFAULT_REDIRECT_PATH
+  }
+}
+
 // 提交登录表单：成功后根据 redirect 参数进行安全重定向
-const handleSubmit = async (values: any) => {
+const handleSubmit = async (values: FormState) => {
   try {
     const res = await userLoginUsingPost(values)
     if (res.data.code === 0 && res.data.data) {
       // 登录成功后，刷新登录用户信息
       await userLoginUserStore.fetchLoginUser()
       message.success('登录成功')
-      // 从登录页 URL 上读取来源地址，例如 /user/login?redirect=/admin/userManage
-      const redirectParam = route.query.redirect as string | undefined
-      // 当前登录用户角色，用于限制非管理员跳转到 /admin
+
+      // 计算安全的跳转地址
+      const redirectQuery = route.query.redirect
       const role = userLoginUserStore.loginUser?.userRole
-      if (redirectParam) {
-        try {
-          // 情况1：站内相对路径，例如 "/", "/about", "/admin/userManage"
-          if (redirectParam.startsWith('/')) {
-            if (redirectParam.startsWith('/admin') && role !== 'admin') {
-              // 非管理员不允许回跳到后台，降级到首页
-              router.replace('/')
-            } else {
-              // 使用 replace，避免返回历史栈时又回到登录页
-              router.replace(redirectParam)
-            }
-          } else {
-            // 情况2：完整 URL（可能来自拦截器注入），需校验同源以防跳转到外站
-            const url = new URL(redirectParam)
-            if (url.origin === window.location.origin) {
-              if (url.pathname.startsWith('/admin') && role !== 'admin') {
-                router.replace('/')
-              } else {
-                // 同源完整 URL，直接以 location 刷新到目标地址
-                window.location.href = redirectParam
-              }
-            } else {
-              // 非同源地址，安全起见不跳转，回到首页
-              router.replace('/')
-            }
-          }
-        } catch {
-          // 参数异常（无法解析为 URL 等），统一回到首页
-          router.replace('/')
-        }
-      } else {
-        // 无 redirect 参数，默认回到首页
-        router.replace('/')
+      const isAdmin = role === 'admin'
+
+      let targetPath = getSafeRedirectPath(redirectQuery)
+
+      // 权限兜底：非管理员如果尝试跳转到 /admin，强制回首页
+      if (!isAdmin && targetPath.startsWith('/admin')) {
+        targetPath = DEFAULT_REDIRECT_PATH
       }
-      router.replace(finalPath)
+
+      // 执行跳转
+      router.replace(targetPath)
     } else {
       message.error('登录失败' + (res.data.message || ''))
     }
-  } catch (e: any) {
-    message.error('登录失败' + (e.message || ''))
+  } catch (e: unknown) {
+    message.error('登录失败' + (e instanceof Error ? e.message : ''))
   }
   // 登录
 }
